@@ -1,5 +1,31 @@
 channels:
 - conda-forge
 - bioconda
+- defaults
 dependencies:
 - snakemake-minimal
+- r-umap=0.2.7.0
+- r-RColorBrewer=1.1_2
+- r-dplyr=1.0.5
+- r-venndiagram=1.6.20
+- r-ggplot2=3.3.3
+- r-BiocManager=1.30.12
+- python=3.9.2
+- r-argparse=2.0.3
+- rstudio=1.1.456
+- r-rmarkdown=2.7
+- r-pheatmap=1.0.12
+- r-base=4.0.3
+- r-digest=0.6.27
+- bioconductor-apeglm 
+- r-tidyverse
+- r-tidymodels
+- r-r6
+- r-patchwork
+- r-tidyr
+- r-ggrepel
+- r-ggnewscale
+- r-shiny
+- r-magrittr
+
+
