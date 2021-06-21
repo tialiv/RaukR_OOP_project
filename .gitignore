@@ -6,6 +6,7 @@
 intermediate
 logs
 scratch
+data 
 
 # ignore OS generated files
 .DS_Store
