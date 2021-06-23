@@ -1,7 +1,7 @@
 ---
-title: "OOP project"
-author: "Tianyi"
-date: "6/14/2021"
+title: "OOP project: Epidemiological Simulation of COVID-19 Spread"
+author: "Tianyi Li"
+date: "6/24/2021"
 output: 
   ioslides_presentation:
     theme: united
@@ -13,10 +13,21 @@ knitr::opts_chunk$set(echo = TRUE)
 .libPaths("/Users/tili/miniconda3/envs/OOP_project/lib/R/library")
 ```
 
+# Epidemiological Simulation 
 
+- In a small island with 16 individuals --> Travel 
 
-```{r creating objects}
+```{r load dependencies, results="hide"}
 library(R6)
+library(tidyverse)
+library(ggplot2)
+library(ggrepel)
+library(stringi)
+```
+
+## Create R6 object and set functions to access data within R6 object
+
+```{r creating objects, echo=T}
 Individual <- R6Class("Individual", 
                   public = list(
                     initialize = function(id = NA,
@@ -91,17 +102,16 @@ Individual <- R6Class("Individual",
                     iter = 0
                   )
 )
-ind <- Individual$new(age = sample(1:100, replace = T, size = 1),
-  x = sample(1:4, replace = F, size = 1),
-  y = sample(1:4, replace = F, size = 1))
 
-ind$set_state("infected")
-ind
 ```
 
+## Create 16 individuals in a list 
+
+> - Arrange individuals in a data frame
+> - Store individuals information in to a list for further simulation
 
 ```{r creating individuals, echo=T}
-library(tidyverse)
+
 world <- matrix(data = NA, ncol = 4, nrow = 4) %>% 
   as.list()
 
@@ -117,10 +127,10 @@ index2coords <- function(i, neighbor) {
 }
 
 # coords2index
-coords2index <- function(x, y, neighbor) {
-  index <- ((y - 1) * ncol(neighbor)) + x
-  return(index)
-}
+#coords2index <- function(x, y, neighbor) {
+#  index <- ((y - 1) * ncol(neighbor)) + x
+#  return(index)
+#}
 
 #coord <- function(i, neighbor) {
 #  if (i <= ncol(neighbor)) {
@@ -165,9 +175,12 @@ for (i in 1:16) {
   coordin[i, 4] <- ind_i$get_state()
   world[[i]] <- ind_i
 }
+
 ```
 
-``` {r plotting}
+## Plotting original position of individuals and the state of health
+
+```{r plotting}
 theme <- theme(text=element_text(size=10),
                axis.text.x=element_blank(),
                axis.text.y=element_blank(),
@@ -181,65 +194,148 @@ theme <- theme(text=element_text(size=10),
                axis.line.y = element_line(size=0.4),
                panel.background = element_blank())
 
-library(ggplot2)
-library(ggrepel)
-
-ggplot(coordin, aes(x = x, y = y, col = state, label = individual)) + geom_point(size = 10, col = "dark green") +
+ggplot(coordin, aes(x = x, y = y, col = state, label = individual)) + geom_point(size = 10, col = "#56B4E9") +
   ggrepel::geom_text_repel(data = coordin, aes(label = individual), size = 5, point.padding = 15, min.segment.length = 0,
                            fontface = "bold", show.legend = T) +
   theme + xlab("") + ylab("") + ggtitle("Health state of individuals before travel") +
   guides(colour = guide_legend(title = "Health state", override.aes = list(size = 5)))
 
+t(neighbor)[nrow(neighbor):1,]
+
 ```
 
-```{r simulation of movement & set rules}
+## Let the individuals travel within the world
 
+> - Store and new coordinates after travelling
+> - Plot the new position for all individuals
+> - Set one of the individuals infected
+
+```{r simulation of movement}
 #world <- matrix(1:100, nrow = 10, byrow = T)
 
-update <- sample(1:16, replace = F)
-o <- order(update)
+#update <- sample(1:16, replace = F)
+#o <- order(update)
 
 world_new <- matrix(data = NA, ncol = 4, nrow = 4) %>% 
   as.list()
 
-for (i in update) {
-  for (j in o) {
-    y <- ceiling(j / ncol(neighbor))
-    x <- j - ((y-1) * ncol(neighbor))
-    neighbor[x, y] <- paste0("ind_",i)
-    print(ind_i)
-    world_new[[i]] <-ind_i
-  }
+#for (i in update) {
+#  for (j in o) {
+#    y <- ceiling(j / ncol(neighbor))
+#    x <- j - ((y-1) * ncol(neighbor))
+#    neighbor[x, y] <- paste0("ind_",i)
+#    print(ind_i)
+#    world_new[[i]] <-ind_i
+#  }
+#}
+
+coordin_new <- coordin
+
+for (i in 1:16) {
+  coordin_new[i, 2] <- sample(1:4, replace = F, size = 1)
+  coordin_new[i, 3] <- sample(1:4, replace = F, size = 1)
 }
 
+ggplot(coordin_new, aes(x = x, y = y, col = state, label = individual)) + geom_point(size = 10, col = "#56B4E9") +
+  ggrepel::geom_text_repel(data = coordin_new, aes(label = individual), size = 5, point.padding = 15, min.segment.length = 0,
+                           fontface = "bold", show.legend = T) +
+  theme + xlab("") + ylab("") + ggtitle("Health state of individuals after travel") +
+  guides(colour = guide_legend(title = "Health state", override.aes = list(size = 5)))
 
+neighbor_new <- neighbor
+world_new <- world
+
+#A = list(a1 = C$new(1), a2 = C$new(2))    
+
+#B = list()
+#for (name in names(A))
+#{
+#    B[[name]] = A[[name]]$clone(deep=TRUE)
+#}
+
+#print(B[["a1"]]$x) # [1]
+#A[["a1"]]$x = 4
+#print(B[["a1"]]$x) # [1]
+
+for (i in 1:16) {
+  x <- coordin_new[i, 2]
+  y <- coordin_new[i, 3]
+  print(paste0("ind_", i, " ", "x = ", x, " ", "y = ", y))
+  world_new[[i]]$move(x,y)
+}
+
+world_new[[1]]$set_type("infected")
 ```
+
+## Check infection states
+
+> - Individuals with the same coordinate will become infected
+> - Change the state of the infected individuals in the original list
+> - Plot the individuals'position and the health state
 
 ```{r change health status once infected}
-spread <- function() {
-  for(i in 1:16) {
+coordin_infect <- coordin_new
+for(i in 1:16) {
      if (world_new[[i]]$get_type() == "infected") {
-        y <- ceiling(i / ncol(neighbor))
-        x <- i - ((y-1) * ncol(neighbor))
-    
-        ind_i$set_state("infected")
-        ind_i$set_type("infected") 
+        if(coordin_new[[i, 2]] %in% coordin_new$x) {
+          subset <- coordin_new %>% filter(coordin_new[[i, 2]] == coordin_new$x)  
+          subset <- subset %>% filter(coordin_new[[i, 3]] == subset$y)
+        }
+        infection <- str_sub(subset$individual, start = 5) %>% as.numeric()
+        for (j in infection) {
+          world_new[[j]]$set_state("infected")
+          world_new[[j]]$set_type("infected") 
+        }
+        coordin_infect[i, 4] <- world_new[[i]]$get_state()
     } 
-  }
 }
+
+ggplot(coordin_infect, aes(x = x, y = y, col = state, label = individual)) + geom_point(size = 10) +
+  scale_color_manual(values = c("#56B4E9","#D55E00")) + 
+  ggrepel::geom_text_repel(data = coordin_infect, aes(label = individual), size = 5, point.padding = 15, min.segment.length = 0,
+                           fontface = "bold", show.legend = T) +
+  theme + xlab("") + ylab("") + ggtitle("Health state of individuals after travel") +
+  guides(colour = guide_legend(title = "Health state", override.aes = list(size = 5)))
+
 ```
 
+## Count number of infection
+
+> - Check the state of individual in the original list
+> - Count the people with "infected"" state
+> - Print the summary results
+
 ```{r count infection}
-count_infect <- function(i) {
-  for (i in 1:16) {
-    infected <- 0
-    if (world_new[[i]]$get_state == "infected") {
+infected <- 0
+for (i in 1:16) {
+    if (world_new[[i]]$get_state() == "infected") {
       infected <- infected + 1  
     } else {
       infected <- infected
     }
-    paste0("Infected number after travel:", " ", infected)
-  }
 }
+print(paste0("Infected number after travel:", " ", infected))
 ```
 
+## Return home
+
+> - Let the individual return home
+> - Plot the individual position and health state
+
+```{r return home}
+coordin2 <- coordin_infect 
+coordin2$x <- coordin$x
+coordin2$y <- coordin$y
+
+ggplot(coordin2, aes(x = x, y = y, col = state, label = individual)) + geom_point(size = 10) +
+  scale_color_manual(values = c("#56B4E9","#D55E00")) + 
+  ggrepel::geom_text_repel(data = coordin2, aes(label = individual), size = 5, point.padding = 15, min.segment.length = 0,
+                           fontface = "bold", show.legend = T) +
+  theme + xlab("") + ylab("") + ggtitle("Health state of individuals after 1st travel") +
+  guides(colour = guide_legend(title = "Health state", override.aes = list(size = 5)))
+```
+
+## Future plan
+
+> - Include the simulation process into a function
+> - Increase the size of individuals and repeat the simulation
