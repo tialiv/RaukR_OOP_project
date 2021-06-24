@@ -27,5 +27,6 @@ dependencies:
 - r-ggnewscale
 - r-shiny
 - r-magrittr
+- r-rlang
 
 
